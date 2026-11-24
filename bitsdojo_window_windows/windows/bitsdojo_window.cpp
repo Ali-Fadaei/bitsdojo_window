@@ -278,7 +278,14 @@ namespace bitsdojo_window {
         {
             return 0;
         }
-        
+
+        // A minimized window keeps the default (empty) client area, so the
+        // Flutter view is resized to 0x0 and Flutter reports the app hidden.
+        if (IsIconic(window))
+        {
+            return DefSubclassProc(window, WM_NCCALCSIZE, wparam, lparam);
+        }
+
         auto params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
         if (params->lppos)
             adjustMaximizedSize(window, params->lppos);
@@ -478,7 +485,9 @@ LRESULT CALLBACK main_window_proc(HWND window, UINT message, WPARAM wparam, LPAR
     }
     case WM_SIZE:
     {
-        if (during_minimize == TRUE) {
+        // WM_SIZE with SIZE_MINIMIZED is not swallowed: Flutter needs it
+        // (top-level window and 0x0 view) to report the app hidden.
+        if ((during_minimize == TRUE) && (wparam != SIZE_MINIMIZED)) {
                 return 0;
         }
         if (bypass_wm_size == TRUE)
